@@ -19,7 +19,6 @@ class MCPricer(object):
         self.episodes = None
 
     def price(self, X, op_type="call"):
-        assert(self.episodes != None)
         assert(self.df != None)
         n, t = self.episodes.shape
         if op_type == "call":
