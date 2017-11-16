@@ -3,7 +3,8 @@
 # date: 11/8/2017
 
 import numpy as np
-
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 class MCPricer(object):
     # figure out way to get better estimate for r
@@ -19,7 +20,6 @@ class MCPricer(object):
         self.episodes = None
 
     def price(self, X, op_type="call"):
-        assert(self.df != None)
         n, t = self.episodes.shape
         if op_type == "call":
             return (np.sum((self.episodes[:, -1] - X)[np.where((self.episodes[:, -1] - X) > 0)]) / n) * self.df
