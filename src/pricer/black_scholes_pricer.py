@@ -14,7 +14,8 @@ from scipy.stats import norm
 class BSPricer(object):
 
     def __init__(self, rf, T):
-        self.N = lambda x: norm.cdf(x)
+        self.Ncdf = lambda x: norm.cdf(x)
+        self.Npdf = lambda x: norm.pdf(x)
         self.d1 = None
         self.d2 = None
         self.r = rf           # risk free rate
@@ -37,7 +38,7 @@ class BSPricer(object):
         self.vega = None
         self.rho = None
 
-    def __set_params(self, S, X, v, d, t, op_type):
+    def _set_params(self, S, X, v, d, t, op_type):
         self.S = S.astype(np.float)
         self.X = X.astype(np.float)
         self.v = float(v)
@@ -45,14 +46,14 @@ class BSPricer(object):
         self.t = float(t)
         self.op_type = op_type
 
-    def __set_d_values(self, d1, d2):
+    def _set_d_values(self, d1, d2):
         self.d1 = d1
         self.d2 = d2
 
-    def __generate_greeks(self):
-        self.delta = (np.exp(-self.d * self.tt) * self.N(self.d1)
+    def _generate_greeks(self):
+        self.delta = (np.exp(-self.d * self.tt) * self.Ncdf(self.d1)
                       if self.op_type == "call"
-                      else np.exp(-self.d * self.tt) * (self.N(self.d1) - 1))
+                      else np.exp(-self.d * self.tt) * (self.Ncdf(self.d1) - 1))
 
         self.gamma = (np.exp(-self.d * self.tt) / (self.S * self.v * np.sqrt(self.tt))
                       * 1 / np.sqrt(2 * np.pi) * np.exp(-0.5 * self.d1**2))
@@ -62,23 +63,31 @@ class BSPricer(object):
                 -(self.S * self.v * np.exp(-self.d * self.tt) / 2 * np.sqrt(self.tt)
                     * 1 / np.sqrt(2 * np.pi) * np.exp(-0.5 * self.d1**2)
                   )
-                - self.r * self.X * np.exp(-self.r * (self.tt) * self.N(self.d2))
-                + self.d * self.S * np.exp(-self.d * self.tt) * self.N(self.d1))
+                - self.r * self.X * np.exp(-self.r * (self.tt) * self.Ncdf(self.d2))
+                + self.d * self.S * np.exp(-self.d * self.tt) * self.Ncdf(self.d1))
             if self.op_type == "call"
             else (
                 1 / self.T * (
                     -(self.S * self.v * np.exp(-self.d * (self.tt)) / 2 * np.sqrt(self.tt)
                       * 1 / np.sqrt(2 * np.pi) * np.exp(-0.5 * self.d1**2)
                       )
-                    + self.r * self.X * np.exp(-self.r * (self.tt) * self.N(-self.d2))
-                    - self.d * self.S * np.exp(-self.d * (self.tt)) * self.N(-self.d1))))
+                    + self.r * self.X * np.exp(-self.r * (self.tt) * self.Ncdf(-self.d2))
+                    - self.d * self.S * np.exp(-self.d * (self.tt)) * self.Ncdf(-self.d1))))
 
         self.vega = (0.01 * self.S * np.exp(-self.d * (self.tt)) * np.sqrt(self.tt)
                      * (1 / np.sqrt(2 * np.pi)) * np.exp(-0.5 * self.d1**2))
 
-        self.rho = (0.01 * self.X * (self.tt) * np.exp(-self.r * (self.tt)) * self.N(self.d2)
+        self.rho = (0.01 * self.X * (self.tt) * np.exp(-self.r * (self.tt)) * self.Ncdf(self.d2)
                     if self.op_type == "call"
-                    else -0.01 * self.X * (self.tt) * np.exp(-self.r * (self.tt)) * self.N(-self.d2))
+                    else -0.01 * self.X * (self.tt) * np.exp(-self.r * (self.tt)) * self.Ncdf(-self.d2))
+
+    def _generate_2nd_order(self):
+        # Need to write tests for vanna
+        self.vanna = -np.exp(-self.d*self.tt)*self.Npdf(self.d1)*(self.d2/self.v)
+
+        self.volga = self.S * np.exp(-self.d*self.tt)*np.sqrt(self.tt)*self.Npdf(self.d1)*((self.d1*self.d2)/self.v)
+
+
 
     def price(self, S, X, v, d, t, op_type, greeks=True):
         """
@@ -92,7 +101,7 @@ class BSPricer(object):
         """
         assert(op_type == "call" or op_type == "put")
         assert(len(S.shape) == 1 and len(X.shape) == 1)  # Make sure dimensions (-1,)
-        self.__set_params(S, X, v, d, t, op_type)
+        self._set_params(S, X, v, d, t, op_type)
 
         self.tt = self.t / self.T
         ssqrt = self.v * np.sqrt(self.tt)
@@ -100,16 +109,18 @@ class BSPricer(object):
         d2 = d1 - ssqrt
 
         if op_type == "call":
-            price = (self.S * np.exp(-self.d * (self.tt)) * self.N(d1)
-                     - self.X * np.exp(-self.r * (self.tt)) * self.N(d2))
+            price = (self.S * np.exp(-self.d * (self.tt)) * self.Ncdf(d1)
+                     - self.X * np.exp(-self.r * (self.tt)) * self.Ncdf(d2))
         else:
-            price = (self.X * np.exp(-self.r * (self.tt)) * self.N(-d2)
-                     - self.S * np.exp(-self.d * (self.tt)) * self.N(-d1))
+            price = (self.X * np.exp(-self.r * (self.tt)) * self.Ncdf(-d2)
+                     - self.S * np.exp(-self.d * (self.tt)) * self.Ncdf(-d1))
 
-        self.__set_d_values(d1, d2)
+        self._set_d_values(d1, d2)
         if greeks:
             self.greeks = greeks
-            self.__generate_greeks()
+            self._generate_greeks()
+            self._generate_2nd_order()
+
         return price
 
     def payout(self, S, X, op_type):
@@ -126,10 +137,14 @@ class BSPricer(object):
 
     def print_greeks(self):
         if self.greeks:
+            print("1st order greeks.")
             print("Delta: ", self.delta)
             print("Gamma: ", self.gamma)
             print("Theta: ", self.theta)
             print("Vega: ", self.vega)
             print("Rho: ", self.rho)
+            print("2nd order greeks.")
+            print("Vanna: ", self.vanna)
+            print("Volga: ", self.volga)
         else:
             print("Greeks were not set...")
