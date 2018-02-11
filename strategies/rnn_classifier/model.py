@@ -29,15 +29,12 @@ class SimpleLSTM(nn.Module):
             dropout=self.dropout,
             batch_first=True
         )
-        self.fc = nn.Sequential(
-            nn.Linear(self.hidden_size, 2),
-            # Sigmoid to squash values between 0 and 1
-            nn.Sigmoid()
-        )
+        self.fc = nn.Linear(self.hidden_size, 2)
+
         
     def forward(self, x, train=True):
         out = self.fc_pre(x)
         # hidden,cell init to 0 as default
         out, _ = self.rnn(out)
         # We want the out of the last step (batch, step, out)
-        return self.fc(out[:,-1,:])
+        return F.softmax(self.fc(out[:,-1,:]), dim=1)
