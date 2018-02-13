@@ -10,10 +10,11 @@ class SimpleLSTM(nn.Module):
     """
     Simple 2 layer LSTM used for classification. 
     """ 
-    def __init__(self, input_size, hidden_size, batch_size, steps, n_layers=3, dropout=0.5):
+    def __init__(self, input_size, hidden_size, n_classes, batch_size, steps, n_layers=3, dropout=0.5):
         super(SimpleLSTM, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
+        self.n_classes = n_classes
         self.batch_size = batch_size
         self.steps = steps
         self.n_layers = n_layers
@@ -29,7 +30,7 @@ class SimpleLSTM(nn.Module):
             dropout=self.dropout,
             batch_first=True
         )
-        self.fc = nn.Linear(self.hidden_size, 2)
+        self.fc = nn.Linear(self.hidden_size, self.n_classes)
 
         
     def forward(self, x, train=True):
@@ -64,4 +65,4 @@ def MultiplicativeLSTMCell(input, hidden, w_xm, w_hm, w_ih, w_mh, b_xm=None, b_h
     cy = (forgetgate * cx) + (ingate * hiddengate)
     hy = F.tanh(cy * outgate)
 
-return hy, cy
+    return hy, cy

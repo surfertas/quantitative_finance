@@ -79,12 +79,13 @@ if __name__=="__main__":
     train_data = SequenceDataset('train_data.csv','.',25)
     test_data = SequenceDataset('test_data.csv','.',25)
 
-    train_loader = DataLoader(train_data, batch_size=1, shuffle=False, num_workers=4)
+    train_loader = DataLoader(train_data, batch_size=32, shuffle=False, num_workers=4)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
 
     model = SimpleLSTM(
-        input_size=190,
+        input_size=230,
         hidden_size=100,
+        n_classes=3,
         batch_size=1,
         steps=25
     ).cuda()
