@@ -39,7 +39,7 @@ class SimpleLSTM(nn.Module):
         x, _ = self.rnn(x)
         # We want the out of the last step (batch, step, out)
         # Pass latent representation to fully connected.
-        x = F.relu(self.fc1(x[:,-1,:]))
+        x = F.relu(self.fc1(x[:, -1,:]))
         x = F.dropout(x, training=self.training)
         x = self.fc2(x)
         return F.softmax(x, dim=1)
@@ -86,7 +86,7 @@ class StackedLSTM(nn.Module):
         out_1, _ = self.rnn_1(out)
         out_2, _ = self.rnn_2(out)
         out = out_1 + out_2
-        out = F.dropout(self.fc(out[:,-1,:]))
+        out = F.dropout(self.fc(out[:, -1,:]))
         # We want the out of the last step (batch, step, out)
         return F.softmax(out, dim=1)
 
