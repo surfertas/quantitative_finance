@@ -31,7 +31,12 @@ class SequenceDataset(Dataset):
         return len(self._frames.index) - self._steps
 
     def __getitem__(self, idx):
-        index = idx + self._steps
+        if isinstance(idx, slice):
+            i = idx.indices(len(self))[1]
+        else:
+            i = idx
+
+        index = i + self._steps
         # Normalize over sequence (TODO: Find a better way to handle)
         X = self._X.iloc[index-self._steps:index]
         # Get standardardize using the past "steps" samples.
@@ -71,7 +76,8 @@ class SequenceDatasetOneHot(Dataset):
         return len(self._frames.index) - self._steps
 
     def __getitem__(self, idx):
-        index = idx + self._steps
+        i = idx[1] if len(idx) == 3 else idx
+        index = i + self._steps
         # Normalize over sequence (TODO: Find a better way to handle)
         X = self._X.iloc[index-self._steps:index]
         # Get standardardize using the past "steps" samples.
