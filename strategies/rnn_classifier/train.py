@@ -73,8 +73,6 @@ def train_one_epoch_cv(optimizer, model, loss_fn, data_loader, epoch):
           epoch + 1, ave_loss, ave_acc))
 
 
-            
-
 
 def train_one_epoch(optimizer, model, loss_fn, data_loader, epoch):
     """ Train one epoch. """
@@ -136,26 +134,26 @@ if __name__=="__main__":
     # Set random seed to 0
     np.random.seed(0)
     torch.manual_seed(0)
-    train_data = SequenceDataset('train_data.csv','.',25)
-    test_data = SequenceDataset('test_data.csv','.',25)
+    train_data = SequenceDataset('train_data_oc.csv','.',25)
+    test_data = SequenceDataset('test_data_oc.csv','.',25)
 
     train_loader = DataLoader(train_data, batch_size=1, shuffle=False, num_workers=4)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
 
     model = SimpleLSTM(
         input_size=230,
-        hidden_size=100,
+        hidden_size=200,
         n_classes=3,
         batch_size=1,
         steps=25,
-        n_layers=3
+        n_layers=2
     ).cuda()
     optimizer =  torch.optim.Adam(model.parameters())
     loss_fn = nn.CrossEntropyLoss()
 
     for epoch in range(200):
-        train_one_epoch(optimizer, model, loss_fn, train_loader, epoch)
-#        train_one_epoch_cv(optimizer, model, loss_fn, train_data, epoch)
+#        train_one_epoch(optimizer, model, loss_fn, train_loader, epoch)
+        train_one_epoch_cv(optimizer, model, loss_fn, train_data, epoch)
        
     evaluate(model, loss_fn, test_loader, epoch)
 

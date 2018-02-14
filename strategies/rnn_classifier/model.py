@@ -30,16 +30,19 @@ class SimpleLSTM(nn.Module):
             dropout=self.dropout,
             batch_first=True
         )
-        self.fc = nn.Linear(self.hidden_size, self.n_classes)
-
+        self.fc1 = nn.Linear(self.hidden_size, 128)
+        self.fc2 = nn.Linear(128, self.n_classes)
         
     def forward(self, x, train=True):
-        out = F.dropout(self.fc_pre(x))
+        x = F.tanh(F.dropout(self.fc_pre(x)))
         # hidden,cell init to 0 as default
-        out, _ = self.rnn(out)
-        out = F.dropout(self.fc(out[:,-1,:]))
+        x, _ = self.rnn(x)
         # We want the out of the last step (batch, step, out)
-        return F.softmax(out, dim=1)
+        # Pass latent representation to fully connected.
+        x = F.relu(self.fc1(x[:,-1,:]))
+        x = F.dropout(x, training=self.training)
+        x = self.fc2(x)
+        return F.softmax(x, dim=1)
 
 class StackedLSTM(nn.Module):
     """
