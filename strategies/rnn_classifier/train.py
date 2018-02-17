@@ -131,26 +131,39 @@ if __name__ == "__main__":
     # Set random seed to 0
     np.random.seed(0)
     torch.manual_seed(0)
-    train_data = SequenceDataset('train_data_oc.csv', '.', 25)
-    test_data = SequenceDataset('test_data_oc.csv', '.', 25)
 
-    train_loader = DataLoader(train_data, batch_size=1, shuffle=False, num_workers=4)
-    test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
+    train_data_seq = SequenceDataset('train_data_oc.csv', '.', 7)
+    test_data_seq = SequenceDataset('test_data_oc.csv', '.', 7)
 
-    model = SimpleLSTM(
+    train_data = Dataset('train_data_oc.csv', '.')
+    test_data = Dataset('test_data_oc.csv', '.')
+
+
+    train_loader = DataLoader(train_data, batch_size=32, shuffle=False, num_workers=4)
+    test_loader = DataLoader(test_data, batch_size=32, shuffle=False, num_workers=4)
+
+    model_lstm = SimpleLSTM(
         input_size=230,
-        hidden_size=200,
+        hidden_size=100,
         n_classes=3,
         batch_size=1,
-        steps=25,
-        n_layers=2
+        steps=7,
+        n_layers=1
     ).cuda()
-    optimizer = torch.optim.Adam(model.parameters())
+
+    model_nn = NN(
+        input_size=230,
+        hidden_size=50,
+        n_classes=3
+    ).cuda()
+
+    optimizer = torch.optim.Adam(model_nn.parameters(), 0.001)
     loss_fn = nn.CrossEntropyLoss()
 
+
     for epoch in range(200):
-#        train_one_epoch(optimizer, model, loss_fn, train_loader, epoch)
-        train_one_epoch_cv(optimizer, model, loss_fn, train_data, epoch)
+        train_one_epoch(optimizer, model, loss_fn, train_loader, epoch)
+#        train_one_epoch_cv(optimizer, model, loss_fn, train_data, epoch)
 
     evaluate(model, loss_fn, test_loader, epoch)
 
