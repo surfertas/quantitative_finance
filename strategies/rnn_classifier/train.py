@@ -12,6 +12,7 @@ from torch.autograd import Variable
 from model import *
 from data_set import *
 
+
 def train_one_epoch_cv(optimizer, model, loss_fn, data_loader, epoch):
     k = 1500
     n_tests = (len(data_loader) - k)
@@ -144,7 +145,7 @@ if __name__ == "__main__":
                         help='how many batches to wait before logging training status')
     parser.add_argument('--steps', type=int, default=25, metavar='N',
                         help='how many time steps in sequence (if 0, use feedforward)')
-    
+
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     if args.cuda:
@@ -162,9 +163,8 @@ if __name__ == "__main__":
     train_data_seq = SequenceDataset(args.train_data, current_dir, args.steps)
     test_data_seq = SequenceDataset(args.test_data, current_dir, args.steps)
 
-    #train_data = Dataset('train_data_oc.csv', '.')
-    #test_data = Dataset('test_data_oc.csv', '.')
-
+    # train_data = Dataset('train_data_oc.csv', '.')
+    # test_data = Dataset('test_data_oc.csv', '.')
 
     train_loader = DataLoader(train_data_seq, batch_size=32, shuffle=False, num_workers=4)
     test_loader = DataLoader(test_data_seq, batch_size=32, shuffle=False, num_workers=4)
@@ -178,7 +178,7 @@ if __name__ == "__main__":
         n_layers=1
     ).cuda()
 
-    #model_nn = NN(
+    # model_nn = NN(
     #    input_size=230,
     #    hidden_size=50,
     #    n_classes=3
@@ -186,7 +186,6 @@ if __name__ == "__main__":
 
     optimizer = torch.optim.Adam(model_lstm.parameters(), args.lr)
     loss_fn = nn.CrossEntropyLoss()
-
 
     for epoch in range(args.epochs):
         train_one_epoch(optimizer, model_lstm, loss_fn, train_loader, epoch)
