@@ -6,11 +6,36 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
+
+
+class NN(nn.Module):
+    """
+    MLP
+    """
+    def __init(self, input_size, hidden_size, n_classes, dropout=0.5):
+        super(NN, self).__init__()
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.n_classes = n_classes
+        self.dropout = dropout
+        
+        self.fc1 = nn.Linear(self.input_size, self.hidden_size)
+        self.fc2 = nn.Linear(self.hidden_size, n_classes)
+        
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.dropout(x, training=self.training)
+        x = self.fc2(x)
+        return F.softmax(x, dim=1)
+       
+
+    
+
 class SimpleLSTM(nn.Module):
     """
     Simple 2 layer LSTM used for classification. 
     """ 
-    def __init__(self, input_size, hidden_size, n_classes, batch_size, steps, n_layers=3, dropout=0.5):
+    def __init__(self, input_size, hidden_size, n_classes, batch_size, steps, n_layers=2, dropout=0.5):
         super(SimpleLSTM, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -30,11 +55,11 @@ class SimpleLSTM(nn.Module):
             dropout=self.dropout,
             batch_first=True
         )
-        self.fc1 = nn.Linear(self.hidden_size, 128)
-        self.fc2 = nn.Linear(128, self.n_classes)
+        self.fc1 = nn.Linear(self.hidden_size, 64)
+        self.fc2 = nn.Linear(64, self.n_classes)
         
     def forward(self, x, train=True):
-        x = F.tanh(F.dropout(self.fc_pre(x)))
+        x = F.dropout(F.tanh(self.fc_pre(x)), training=self.training)
         # hidden,cell init to 0 as default
         x, _ = self.rnn(x)
         # We want the out of the last step (batch, step, out)

@@ -2,6 +2,7 @@
 
 import os
 import pickle
+import argparse
 
 import torch
 import torch.nn as nn
@@ -10,13 +11,6 @@ from torch.autograd import Variable
 
 from model import *
 from data_set import *
-
-# dtype = torch.FloatTensor
-float_dtype = torch.cuda.FloatTensor
-
-# long_dtype = torch.LongTensor
-long_dtype = torch.cuda.LongTensor
-
 
 def train_one_epoch_cv(optimizer, model, loss_fn, data_loader, epoch):
     k = 1500
@@ -128,29 +122,75 @@ def evaluate(model, loss_fn, data_loader, epoch):
 
 
 if __name__ == "__main__":
+    # Training settings
+    parser = argparse.ArgumentParser(description='RNN Classifier')
+    parser.add_argument('--train-data', type=str, default='train_data_oc.csv',
+                        help='filename containing train data')
+    parser.add_argument('--test-data', type=str, default='test_data_oc.csv',
+                        help='filename containing test data')
+    parser.add_argument('--batch-size', type=int, default=32, metavar='N',
+                        help='input batch size for training (default: 32)')
+    parser.add_argument('--test-batch-size', type=int, default=32, metavar='N',
+                        help='input batch size for testing (default: 32)')
+    parser.add_argument('--epochs', type=int, default=10, metavar='N',
+                        help='number of epochs to train (default: 10)')
+    parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
+                        help='learning rate (default: 0.001)')
+    parser.add_argument('--no-cuda', action='store_true', default=False,
+                        help='disables CUDA training')
+    parser.add_argument('--seed', type=int, default=0, metavar='S',
+                        help='random seed (default: 0)')
+    parser.add_argument('--log-interval', type=int, default=10, metavar='N',
+                        help='how many batches to wait before logging training status')
+    parser.add_argument('--steps', type=int, default=25, metavar='N',
+                        help='how many time steps in sequence (if 0, use feedforward)')
+    
+    args = parser.parse_args()
+    args.cuda = not args.no_cuda and torch.cuda.is_available()
+    if args.cuda:
+        float_dtype = torch.cuda.FloatTensor
+        long_dtype = torch.cuda.LongTensor
+    else:
+        dtype = torch.FloatTensor
+        long_dtype = torch.LongTensor
+
     # Set random seed to 0
-    np.random.seed(0)
-    torch.manual_seed(0)
-    train_data = SequenceDataset('train_data_oc.csv', '.', 25)
-    test_data = SequenceDataset('test_data_oc.csv', '.', 25)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
 
-    train_loader = DataLoader(train_data, batch_size=1, shuffle=False, num_workers=4)
-    test_loader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=4)
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    train_data_seq = SequenceDataset(args.train_data, current_dir, args.steps)
+    test_data_seq = SequenceDataset(args.test_data, current_dir, args.steps)
 
-    model = SimpleLSTM(
+    #train_data = Dataset('train_data_oc.csv', '.')
+    #test_data = Dataset('test_data_oc.csv', '.')
+
+
+    train_loader = DataLoader(train_data_seq, batch_size=32, shuffle=False, num_workers=4)
+    test_loader = DataLoader(test_data_seq, batch_size=32, shuffle=False, num_workers=4)
+
+    model_lstm = SimpleLSTM(
         input_size=230,
-        hidden_size=200,
+        hidden_size=100,
         n_classes=3,
         batch_size=1,
-        steps=25,
-        n_layers=2
+        steps=args.steps,
+        n_layers=1
     ).cuda()
-    optimizer = torch.optim.Adam(model.parameters())
+
+    #model_nn = NN(
+    #    input_size=230,
+    #    hidden_size=50,
+    #    n_classes=3
+    #).cuda()
+
+    optimizer = torch.optim.Adam(model_lstm.parameters(), args.lr)
     loss_fn = nn.CrossEntropyLoss()
 
-    for epoch in range(200):
-#        train_one_epoch(optimizer, model, loss_fn, train_loader, epoch)
-        train_one_epoch_cv(optimizer, model, loss_fn, train_data, epoch)
+
+    for epoch in range(args.epochs):
+        train_one_epoch(optimizer, model_lstm, loss_fn, train_loader, epoch)
+#        train_one_epoch_cv(optimizer, model, loss_fn, train_data, epoch)
 
     evaluate(model, loss_fn, test_loader, epoch)
 
