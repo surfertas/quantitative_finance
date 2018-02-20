@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # @author Tasuku Miura
 
-import pandas
+import pandas as pd
+import numpy as np
 import talib as ta
+from functools import reduce
 
 
 class TAFeatures(object):
@@ -42,15 +44,15 @@ class TAFeatures(object):
             df_final - pandas df with all TA data stored in columns.
         """
         # Get log returns from open to close on same day.
-        log_ret_df = self.get_open_to_close_log_returns(df[['Adj. Close', 'Adj. Open']])
+        log_ret_df = self.get_open_to_close_log_returns(self._df[['Adj. Close', 'Adj. Open']])
 
         # Get features
-        momentum_df = get_momentum_indicators()
-        hist_vol_df = get_hist_vol_indicators()
-        pattern_df = get_pattern_recognition_indicators()
-        cycle_df = get_cycle_indicators()
-        overlap_df = get_overlap_indicators()
-        ohlc_df = get_ohlc_features()
+        momentum_df = self.get_momentum_indicators()
+        hist_vol_df = self.get_hist_vol_indicators()
+        pattern_df = self.get_pattern_recognition_indicators()
+        cycle_df = self.get_cycle_indicators()
+        overlap_df = self.get_overlap_indicators()
+        ohlc_df = self.get_ohlc_features()
 
         dfs = [
             self._df_shifted,
@@ -81,18 +83,18 @@ class TAFeatures(object):
         return df_log
 
     def get_open_to_close_log_returns(self, df):
-         """ Computes open to close returns.
+        """ Computes open to close returns.
         Args:
             df - pandas df.
         Returns:
             df - dataframe with log returns.
         """
-        df['log_ret'] = np.log(df['Adj. Close']/df['Adj. Open'])
+        df['log_ret'] = np.log(df['Adj. Close'] / df['Adj. Open'])
         del df['Adj. Close']
         del df['Adj. Open']
         return df
 
-    def get_momentum_indicators(self, days=[7,14,28, 56]):
+    def get_momentum_indicators(self, days=[7, 14, 28, 56]):
         """ Calculates momentum based indicators.
         Args:
             days - list of time intervals.
@@ -110,7 +112,7 @@ class TAFeatures(object):
             momentum['roc_{}'.format(t)] = ta.ROC(self._c, timeperiod=t)
             momentum['willr_{}'.format(t)] = ta.WILLR(self._h, self._l, self._c, timeperiod=t)
             momentum['trix_{}'.format(t)] = ta.TRIX(self._c, timeperiod=t)
-            
+
         momentum['apo'] = ta.APO(self._c, fastperiod=12, slowperiod=26, matype=0)
         momentum['macd'], momentum['macdsignal'], momentum['macdhist'] = ta.MACD(
             self._c, fastperiod=12, slowperiod=26, signalperiod=9)
@@ -121,12 +123,12 @@ class TAFeatures(object):
             self._h, self._l, self._c, fastk_period=5, fastd_period=3, fastd_matype=0)
         momentum['fastkrsi'], momentum['fastdrsi'] = ta.STOCHRSI(
             self._c, timeperiod=14, fastk_period=5, fastd_period=3, fastd_matype=0)
-        
+
         df = pd.DataFrame.from_dict(momentum)
         df = df.set_index(self._df_index)
         return df
 
-    def get_hist_vol_indicators(self, days=[7,14,28, 56]):
+    def get_hist_vol_indicators(self, days=[7, 14, 28, 56]):
         """ Calculates hist vol indicators.
         Args:
             days - list of time intervals.
@@ -145,7 +147,7 @@ class TAFeatures(object):
         df = pd.DataFrame.from_dict(hist_vol)
         df = df.set_index(self._df_index)
         return df
-    
+
     def get_pattern_recognition_indicators(self):
         """ Calculates candle indicators.
         Returns:
@@ -268,11 +270,10 @@ class TAFeatures(object):
         return df
 
     def get_ohlc_features(self):
-       """ Calculates olhc related indicators.
+        """ Calculates olhc related indicators.
         Returns:
             df - pandas dataframe.
         """
- 
         olhc = dict()
         olhc['hilo_diff'] = self._h - self._l
         olhc['opcl_diff'] = self._c - self._o
