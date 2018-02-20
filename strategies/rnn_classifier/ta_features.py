@@ -6,14 +6,16 @@ import talib as ta
 
 
 class TAFeatures(object):
+
     """
     Technical indicators using talib.
     http://mrjbq7.github.io/ta-lib/func_groups/momentum_indicators.html
-    Note: 
+    Note:
     The class is not flexible, ie, no API to select subset of desired
     features. Most indicators were added as is, as objective was to work
     on as many price indicators as possible for experimination.
     """
+
     def __init__(self, df):
         """
         Args:
@@ -23,14 +25,14 @@ class TAFeatures(object):
         self._df_shifted = df.shift(1)
         self._df_index = self._df_shifted.index
         self._set_ohlc(self._df_shifted)
-    
+
     def _set_ohlc(self, df):
         """ Sets the OHLC to be used for computing indicators.
         Args:
             df - a pandas df. Should be lagged to avoid look ahead.
         """
-        self._o = np.array(df['Adj. Open'], dtype='f8') 
-        self._h = np.array(df['Adj. High'], dtype='f8') 
+        self._o = np.array(df['Adj. Open'], dtype='f8')
+        self._h = np.array(df['Adj. High'], dtype='f8')
         self._l = np.array(df['Adj. Low'], dtype='f8')
         self._c = np.array(df['Adj. Close'], dtype='f8')
 
@@ -40,7 +42,7 @@ class TAFeatures(object):
             df_final - pandas df with all TA data stored in columns.
         """
         # Get log returns from open to close on same day.
-        log_ret_df = self.get_open_to_close_log_returns(df[['Adj. Close','Adj. Open']])
+        log_ret_df = self.get_open_to_close_log_returns(df[['Adj. Close', 'Adj. Open']])
 
         # Get features
         momentum_df = get_momentum_indicators()
@@ -49,7 +51,7 @@ class TAFeatures(object):
         cycle_df = get_cycle_indicators()
         overlap_df = get_overlap_indicators()
         ohlc_df = get_ohlc_features()
-        
+
         dfs = [
             self._df_shifted,
             log_ret_df,
@@ -66,7 +68,6 @@ class TAFeatures(object):
         ).dropna()
         return df_final
 
-
     def get_close_to_close_log_returns(self, df):
         """ Computes close to close returns.
         Args:
@@ -75,7 +76,7 @@ class TAFeatures(object):
             df_log - dataframe with log returns.
         Note: Not used in this excercise.
         """
-        df_log = pd.DataFrame(np.log(df/df.shift(1))).dropna()
+        df_log = pd.DataFrame(np.log(df / df.shift(1))).dropna()
         df_log = df_log.rename(index=str, columns={"Adj. Close": "log_ret"})
         return df_log
 
